@@ -1,5 +1,44 @@
 # Kafka Monitoring Dashboard
 
+---
+
+## 🚦 How to Use This Project
+
+1. **Start the System**
+   ```bash
+   docker compose up -d
+   ```
+   This starts Kafka, Zookeeper, Prometheus, Grafana, Kafka Exporter, and sample producer/consumer.
+
+2. **Wait for Initialization**
+   - First run may take 2–3 minutes (images download, services start)
+   - Watch logs (optional):
+     ```bash
+     docker compose logs -f
+     ```
+
+3. **Access the Dashboards**
+   - **Grafana:** [http://localhost:3000](http://localhost:3000) (login: `admin` / `admin`)
+   - **Prometheus:** [http://localhost:9090](http://localhost:9090)
+   - **Kafka Exporter metrics:** [http://localhost:9308/metrics](http://localhost:9308/metrics)
+
+4. **View Kafka Metrics**
+   - In Grafana, open the “Kafka Monitoring Dashboard”
+   - See panels for message throughput, consumer lag, broker health, and more
+   - Dashboard auto-refreshes every 5 seconds
+
+5. **Stop the System**
+   ```bash
+   docker compose down
+   ```
+
+6. **Monitor Your Own Topics**
+   - Produce/consume to Kafka at `localhost:9092` (from your machine) or `kafka:29092` (from other containers)
+   - Create new topics using the Kafka CLI (see below or in the README)
+   - Edit the Grafana dashboard to monitor your own topics/groups
+
+---
+
 A complete beginner-friendly Kafka monitoring solution using Docker Compose. This project sets up Apache Kafka with Prometheus, Grafana, and Kafka Exporter for comprehensive monitoring and visualization.
 
 ## 🚀 What's Included
@@ -389,356 +428,4 @@ docker-compose ps
    ```
 
 3. **Produce messages to your topic**:
-   ```bash
-   # From your application or manually
-   echo "My message" | kafka-console-producer --topic my-topic --bootstrap-server localhost:9092
    ```
-
-4. **Update dashboard queries**:
-   - In Grafana, edit the dashboard
-   - Change `topic="test-topic"` to `topic="my-topic"` in queries
-   - Save the dashboard
-
-### Stopping the System
-
-```bash
-# Stop all services
-docker-compose down
-
-# Stop and remove all data (clean slate)
-docker-compose down -v
-```
-
-### Checking System Health
-
-**Quick health check:**
-```bash
-# Check if all services are running
-docker-compose ps
-
-# View recent logs
-docker-compose logs --tail=50
-
-# Check specific service logs
-docker-compose logs kafka
-docker-compose logs prometheus
-docker-compose logs grafana
-```
-
-**Verify metrics are flowing:**
-1. Open http://localhost:9090 (Prometheus)
-2. Go to "Graph" tab
-3. Enter query: `kafka_brokers`
-4. Click "Execute" - should show value "1"
-
-### Common Daily Tasks
-
-**1. Check Dashboard Health:**
-- Open Grafana dashboard
-- Verify all panels show data
-- Check for any red indicators
-
-**2. Monitor Consumer Lag:**
-- Look at "Consumer Lag" panel
-- High lag indicates consumer issues
-- Normal lag should be low and stable
-
-**3. Check Message Throughput:**
-- Monitor "Message Throughput" panel
-- Sudden drops may indicate producer issues
-- Spikes may indicate high load
-
-**4. Verify Broker Health:**
-- "Active Brokers" should always show "1"
-- If it shows "0", broker is down
-
-**5. Review System Stats:**
-- Check "Total Partitions" and "Consumer Groups"
-- These should be stable unless you're adding topics
-
-## 📊 Grafana Dashboard Features
-
-### Real-time Monitoring
-- **Auto-refresh:** Dashboard updates every 5 seconds
-- **Time range:** Default 15-minute window (adjustable)
-- **Multiple panels:** 10 different metric visualizations
-
-### Key Panels
-1. **Message Throughput** - Line chart showing messages/sec
-2. **Total Messages** - Cumulative message count
-3. **Consumer Group Members** - Active consumer count
-4. **Consumer Group Current Offset** - Consumer progress
-5. **Consumer Lag** - Unprocessed message count
-6. **Topic Partition Leaders** - Partition leadership
-7. **System Stats** - Brokers, partitions, groups, replicas
-
-## 🔧 Configuration
-
-### Prometheus Configuration
-- **File:** `prometheus/prometheus.yml`
-- **Scrape interval:** 15 seconds
-- **Retention:** 200 hours
-- **Targets:** Kafka Exporter (9308), Kafka JMX (9101)
-
-### Grafana Configuration
-- **Default credentials:** admin/admin
-- **Auto-provisioning:** Datasources and dashboards
-- **Dashboard:** Pre-configured Kafka monitoring
-
-### Kafka Configuration
-- **Broker ID:** 1
-- **Replication factor:** 1 (for single broker)
-- **JMX port:** 9101
-- **External port:** 9092
-
-## 🚨 Troubleshooting
-
-### Common Issues and Solutions
-
-#### 1. Services Not Starting
-
-**Problem**: `docker-compose up` fails or services show "Exit" status
-
-**Solutions**:
-```bash
-# Stop all services and clean up
-docker-compose down -v
-
-# Remove any dangling containers
-docker system prune -f
-
-# Start fresh
-docker-compose up -d
-
-# Check logs for specific errors
-docker-compose logs kafka
-```
-
-**Common causes**:
-- Port conflicts (check if other services use the same ports)
-- Insufficient memory (need at least 4GB available)
-- Docker not running
-
-#### 2. No Metrics in Grafana
-
-**Problem**: Dashboard shows "No data" or empty panels
-
-**Diagnosis**:
-```bash
-# Check if Prometheus targets are up
-curl http://localhost:9090/api/v1/targets
-
-# Check if Kafka Exporter is responding
-curl http://localhost:9308/metrics
-
-# Check Prometheus logs
-docker-compose logs prometheus
-```
-
-**Solutions**:
-- Wait 2-3 minutes for full initialization
-- Restart Kafka Exporter: `docker-compose restart kafka-exporter`
-- Check if Kafka is running: `docker-compose logs kafka`
-
-#### 3. Dashboard Not Loading
-
-**Problem**: Grafana shows error or blank page
-
-**Solutions**:
-```bash
-# Check Grafana logs
-docker-compose logs grafana
-
-# Restart Grafana
-docker-compose restart grafana
-
-# Verify Grafana is accessible
-curl http://localhost:3000/api/health
-```
-
-#### 4. Port Conflicts
-
-**Problem**: "Address already in use" errors
-
-**Diagnosis**:
-```bash
-# Check what's using the ports
-lsof -i :3000  # Grafana
-lsof -i :9090  # Prometheus
-lsof -i :9092  # Kafka
-lsof -i :2181  # Zookeeper
-lsof -i :9308  # Kafka Exporter
-```
-
-**Solutions**:
-- Stop conflicting services
-- Or modify ports in `docker-compose.yml`:
-  ```yaml
-  ports:
-    - "3001:3000"  # Change Grafana to port 3001
-  ```
-
-#### 5. High Memory Usage
-
-**Problem**: System becomes slow or Docker containers fail
-
-**Solutions**:
-```bash
-# Check memory usage
-docker stats
-
-# Increase Docker memory limit (Docker Desktop)
-# Settings → Resources → Memory → Increase to 6GB+
-
-# Or reduce Prometheus retention
-# Edit prometheus/prometheus.yml:
-# --storage.tsdb.retention.time=50h  # Reduce from 200h
-```
-
-#### 6. Slow Dashboard Performance
-
-**Problem**: Dashboard loads slowly or metrics are delayed
-
-**Solutions**:
-- Increase Prometheus scrape interval (less frequent updates)
-- Reduce Grafana refresh rate (Settings → Dashboard → Auto-refresh)
-- Check system resources: `docker stats`
-
-### Advanced Troubleshooting
-
-#### Check Service Health
-
-```bash
-# All services status
-docker-compose ps
-
-# Individual service health
-docker-compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:29092
-docker-compose exec prometheus wget -qO- http://localhost:9090/-/healthy
-docker-compose exec grafana wget -qO- http://localhost:3000/api/health
-```
-
-#### Verify Data Flow
-
-```bash
-# Check if Kafka Exporter is collecting metrics
-curl http://localhost:9308/metrics | grep kafka_brokers
-
-# Check if Prometheus is scraping
-curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'
-
-# Check if Grafana can query Prometheus
-curl "http://localhost:3000/api/datasources/proxy/1/api/v1/query?query=kafka_brokers" -u admin:admin
-```
-
-#### Reset Everything
-
-```bash
-# Complete reset (removes all data)
-docker-compose down -v
-docker system prune -f
-docker volume prune -f
-docker-compose up -d
-```
-
-### Performance Optimization
-
-#### For Development
-```yaml
-# Add to docker-compose.yml for faster startup
-services:
-  kafka:
-    environment:
-      KAFKA_LOG_RETENTION_HOURS: 1  # Reduce log retention
-      KAFKA_LOG_SEGMENT_BYTES: 1073741824  # 1GB segments
-```
-
-#### For Production
-```yaml
-# Add resource limits
-services:
-  kafka:
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-        reservations:
-          memory: 1G
-```
-
-### Useful Commands
-
-```bash
-# View all logs
-docker-compose logs -f
-
-# View specific service logs
-docker-compose logs -f kafka
-docker-compose logs -f prometheus
-docker-compose logs -f grafana
-
-# Restart specific service
-docker-compose restart kafka
-
-# Check service status
-docker-compose ps
-
-# Clean up everything
-docker-compose down -v
-
-# Check Docker resource usage
-docker stats
-
-# View container details
-docker-compose exec kafka bash
-docker-compose exec prometheus sh
-docker-compose exec grafana sh
-```
-
-### Getting Help
-
-If you're still having issues:
-
-1. **Check the logs**: `docker-compose logs -f`
-2. **Verify Docker is running**: `docker version`
-3. **Check system resources**: `docker stats`
-4. **Try the setup script**: `./setup.sh`
-5. **Review the troubleshooting steps above**
-
-## 📚 Learning Resources
-
-### Kafka Concepts
-- **Topics:** Named channels for messages
-- **Partitions:** Parallel streams within topics
-- **Brokers:** Kafka servers that store data
-- **Consumer Groups:** Groups of consumers sharing work
-- **Consumer Lag:** Unprocessed message count
-
-### Monitoring Concepts
-- **Prometheus:** Time-series database for metrics
-- **Grafana:** Visualization platform
-- **Kafka Exporter:** Exports Kafka metrics to Prometheus
-- **JMX:** Java Management Extensions for Kafka metrics
-
-## 🔄 Scaling and Production
-
-For production use, consider:
-
-1. **Multiple Kafka brokers** for high availability
-2. **Increased replication factor** for data safety
-3. **Persistent volumes** for data retention
-4. **Alerting rules** in Prometheus
-5. **Grafana alerts** for critical metrics
-6. **Security configurations** (SASL, SSL)
-
-## 📝 License
-
-This project is open source and available under the MIT License.
-
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
----
-
-**Happy Monitoring! 🎉** 
